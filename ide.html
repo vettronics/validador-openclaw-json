@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>OpenClaw JSON IDE</title>
-  <link rel="stylesheet" href="css/ide-v2.css?v=20260503-data">
+  <link rel="stylesheet" href="css/ide-v2.css?v=20260503-tools">
 </head>
 <body>
   <div class="app">
@@ -22,9 +22,12 @@
       <label class="file-label" for="dbFile">Upload settings-db.json</label>
       <input id="dbFile" type="file" accept=".json,application/json">
       <select id="settingsPresetSelect" title="Escolher preset de settings"></select>
+      <input id="searchText" class="search-input" type="search" placeholder="Pesquisar no editor">
+      <button id="searchBtn" type="button">Pesquisar</button>
       <button id="sampleBtn" type="button">Exemplo</button>
       <button id="formatBtn" type="button">Formatar</button>
       <button id="analyseBtn" class="primary" type="button">Analisar</button>
+      <button id="resetAnalysisBtn" type="button">Limpar análise</button>
       <button id="downloadBtn" type="button">Descarregar openclaw.json</button>
       <button id="downloadReportBtn" type="button">Descarregar relatório</button>
       <span id="ideStatus" class="status">A iniciar Monaco...</span>
@@ -65,8 +68,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
-  <script src="js/ide-monaco-data.js?v=20260503-data"></script>
-  <script src="js/ide-nav.js?v=20260503-data"></script>
-  <script src="js/layout-fix.js?v=20260503-data"></script>
+  <script src="js/ide-monaco-data.js?v=20260503-tools"></script>
+  <script src="js/ide-nav.js?v=20260503-tools"></script>
+  <script src="js/ide-tools.js?v=20260503-tools"></script>
+  <script src="js/layout-fix.js?v=20260503-tools"></script>
 </body>
 </html>
