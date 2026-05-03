@@ -1,94 +1,75 @@
 # Validador de openclaw.json
 
-Página HTML local para validar ficheiros `openclaw.json`.
+Aplicação web estática para editar e validar ficheiros `openclaw.json`.
 
-## Funcionalidades
+## Página recomendada
 
-- Colar directamente o conteúdo do `openclaw.json`.
-- Fazer upload do ficheiro.
-- Fazer upload opcional do schema exportado pela instalação local.
-- Validar estrutura contra o schema.
-- Usar uma base de dados curada de settings frequentes em `data/settings-db.json`.
-- Carregar uma base de dados própria de settings em JSON.
-- Detectar avisos frequentes de segurança e configuração:
-  - Gateway exposto fora de `localhost`;
+Usar a versão IDE:
+
+```text
+ide.html
+```
+
+A página `index.html` fica como versão simples/legada.
+
+## Funcionalidades da versão IDE
+
+- Editor estilo IDE com Monaco Editor.
+- Syntax highlighting JSON.
+- Separadores para:
+  - `openclaw.json`;
+  - `openclaw.schema.json`;
+  - `settings-db.json`.
+- Upload de `openclaw.json`.
+- Upload de `openclaw.schema.json` exportado da instalação.
+- Extracção automática de settings a partir do schema carregado.
+- Autocomplete com `Ctrl+Space` baseado na DB ou no schema carregado.
+- Validação estrutural contra o schema, quando fornecido.
+- Avisos de segurança e operação:
+  - Gateway exposto na rede;
   - autenticação desligada;
-  - canais sem `allowlist` evidente;
-  - segredos escritos directamente no ficheiro;
+  - canais permissivos;
+  - segredos escritos em texto claro;
   - `heartbeat` demasiado frequente;
-  - execução elevada sem `allowFrom`;
-  - chaves suspeitas ou possíveis erros tipográficos.
+  - `exec.security=full` com `ask=off`.
+- Download do `openclaw.json` editado.
+- Download do relatório de análise.
 
-## Limitação importante
+## Fonte canónica dos settings
 
-A base de dados incluída **não substitui** o schema da instalação local.
-
-A fonte canónica para todos os settings aceites pela tua versão continua a ser:
-
-```bash
-openclaw config schema > openclaw.schema.json
-```
-
-A DB incluída em `data/settings-db.json` serve para:
-
-- documentar settings frequentes;
-- aplicar recomendações de segurança e operação;
-- permitir evolução incremental por versão;
-- permitir presets como `common-2026.4.x`.
-
-## Uso recomendado
-
-Exportar o schema da versão instalada:
+A documentação pública é útil, mas a fonte canónica para todos os settings aceites pela tua instalação é o schema local:
 
 ```bash
 openclaw config schema > openclaw.schema.json
 ```
 
-Abrir `index.html` no browser e carregar:
-
-1. `openclaw.json`;
-2. opcionalmente, `openclaw.schema.json`;
-3. escolher o preset da base de dados;
-4. clicar em **Analisar**.
+Ao carregar esse ficheiro em `ide.html`, a aplicação extrai automaticamente os settings disponíveis e usa-os para sugestões e validação.
 
 ## Publicação com GitHub Pages
 
-Como a página é estática, pode ser publicada directamente com GitHub Pages.
+Como a aplicação é estática, pode ser publicada directamente com GitHub Pages.
 
-Depois de activar Pages no repositório, a página consegue carregar automaticamente:
+A versão IDE usa Monaco Editor via CDN:
 
 ```text
-data/settings-db.json
+https://cdn.jsdelivr.net/npm/monaco-editor
 ```
 
-Se for aberta directamente como ficheiro local (`file://`), alguns browsers podem bloquear esse carregamento por `fetch`. Nesse caso, a página usa a DB embutida ou permite fazer upload manual do `settings-db.json`.
+Se for aberta sem Internet, o editor cai para uma `textarea` simples.
 
-## Estrutura da base de dados
+## Estrutura
 
-Exemplo simplificado:
-
-```json
-{
-  "presets": {
-    "common-2026.4.x": {
-      "label": "OpenClaw 2026.4.x — settings frequentes",
-      "settings": [
-        {
-          "path": "gateway.bind",
-          "type": "string",
-          "category": "gateway",
-          "description": "Endereço de escuta do Gateway.",
-          "recommended": "127.0.0.1 quando não existe reverse proxy seguro."
-        }
-      ]
-    }
-  }
-}
+```text
+ide.html
+index.html
+css/ide.css
+js/ide.js
+data/settings-db.json
 ```
 
 ## Validação final
 
-Esta página é uma ferramenta auxiliar. Antes de reiniciar o Gateway ou aplicar alterações em produção, confirmar no host real:
+Esta aplicação é uma ferramenta auxiliar. Antes de reiniciar o Gateway ou aplicar alterações em produção, confirmar no host real:
 
 ```bash
 openclaw doctor
@@ -98,4 +79,4 @@ openclaw security audit --deep
 
 ## Privacidade
 
-A validação corre localmente no navegador. Os ficheiros não são enviados para servidores.
+A validação corre localmente no navegador. Os ficheiros não são enviados para servidores, excepto o carregamento do Monaco Editor via CDN quando se usa `ide.html`.
