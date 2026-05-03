@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>OpenClaw JSON IDE</title>
-  <link rel="stylesheet" href="css/ide-v2.css?v=20260503-scrollfix">
+  <link rel="stylesheet" href="css/ide-v2.css?v=20260503-presets">
 </head>
 <body>
   <div class="app">
@@ -24,6 +24,8 @@
 
       <label class="file-label" for="dbFile">Upload settings-db.json</label>
       <input id="dbFile" type="file" accept=".json,application/json">
+
+      <select id="settingsPresetSelect" title="Escolher preset de settings"></select>
 
       <button id="sampleBtn" type="button">Exemplo</button>
       <button id="formatBtn" type="button">Formatar</button>
@@ -61,7 +63,7 @@
           <div class="issue info">
             <span class="badge info">info</span>
             <strong>Pronto para edição</strong>
-            <p>Usa <code>Ctrl+Space</code> no editor para sugestões. Carrega o <code>openclaw.schema.json</code> para autocomplete e validação mais completos.</p>
+            <p>Usa <code>Ctrl+Space</code> no editor para sugestões. Escolhe um preset ou carrega o <code>openclaw.schema.json</code> para validação completa.</p>
           </div>
           <div class="settings-list" id="settingsList"></div>
         </div>
@@ -70,8 +72,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
-  <script src="js/ide.js?v=20260503-scrollfix"></script>
-  <script src="js/ide-nav.js?v=20260503-scrollfix"></script>
-  <script src="js/layout-fix.js?v=20260503-scrollfix"></script>
+  <script src="js/ide-v3.js?v=20260503-presets"></script>
+  <script src="js/ide-nav.js?v=20260503-presets"></script>
+  <script src="js/layout-fix.js?v=20260503-presets"></script>
 </body>
 </html>
