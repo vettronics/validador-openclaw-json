@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "updated": "2026-05-03",
+  "presets": [
+    {
+      "id": "docs-reference",
+      "label": "Docs OpenClaw — configuration-reference",
+      "file": "data/settings/docs-reference.json"
+    },
+    {
+      "id": "2026.4.x",
+      "label": "OpenClaw 2026.4.x — comum",
+      "file": "data/settings/2026.4.x.json"
+    },
+    {
+      "id": "2026.5.x",
+      "label": "OpenClaw 2026.5.x — comum",
+      "file": "data/settings/2026.5.x.json"
+    },
+    {
+      "id": "schema-local",
+      "label": "Schema local carregado",
+      "dynamic": true
+    }
+  ]
+}
