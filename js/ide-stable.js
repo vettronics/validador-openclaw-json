@@ -1,0 +1,255 @@
+"use strict";
+
+const PRESETS = {
+  "docs-reference": {
+    label: "Docs OpenClaw — configuration-reference",
+    settings: [
+      "channels.defaults.groupPolicy","channels.defaults.contextVisibility","channels.defaults.heartbeat.showOk","channels.defaults.heartbeat.showAlerts","channels.defaults.heartbeat.useIndicator","channels.modelByChannel",
+      "channels.whatsapp.dmPolicy","channels.whatsapp.allowFrom","channels.whatsapp.textChunkLimit","channels.whatsapp.chunkMode","channels.whatsapp.mediaMaxMb","channels.whatsapp.groupPolicy",
+      "channels.telegram.enabled","channels.telegram.botToken","channels.telegram.dmPolicy","channels.telegram.allowFrom","channels.telegram.groups","channels.telegram.groupPolicy",
+      "channels.discord.enabled","channels.discord.token","channels.discord.dmPolicy","channels.discord.allowFrom","channels.discord.groupPolicy","channels.discord.guilds.*.requireMention","channels.discord.guilds.*.users",
+      "agents.defaults.workspace","agents.defaults.model","agents.defaults.heartbeat","agents.defaults.compaction","agents.defaults.sandbox","agents.list",
+      "tools.profile","tools.allow","tools.deny","tools.elevated","tools.exec","tools.web","tools.media","tools.agentToAgent","tools.sessions",
+      "providers","skills","plugins","browser","ui","gateway.port","gateway.mode","gateway.bind","gateway.host","gateway.auth","gateway.http.endpoints","gateway.tls","gateway.reload","hooks","env","secrets","logging","cron","$include"
+    ]
+  },
+  "common-2026-4-x": {
+    label: "OpenClaw 2026.4.x — comum",
+    settings: [
+      "meta.lastTouchedVersion","wizard.lastRunCommand","browser.enabled","browser.defaultProfile","browser.profiles.*.cdpUrl","browser.profiles.*.attachOnly","ui.assistant.avatar",
+      "auth.profiles.*.provider","auth.profiles.*.mode","auth.cooldowns.billingBackoffHours","models.mode","models.providers.*.baseUrl","models.providers.*.api","models.providers.*.models",
+      "agents.defaults.memorySearch.provider","agents.defaults.memorySearch.model","agents.defaults.memorySearch.remote.apiKey","agents.defaults.model.primary","agents.defaults.model.fallbacks","agents.defaults.models","agents.defaults.workspace","agents.defaults.compaction.mode","agents.defaults.sandbox.browser.allowHostControl","agents.defaults.imageGenerationModel.primary","agents.defaults.imageModel.primary","agents.defaults.pdfModel.primary","agents.defaults.pdfMaxBytesMb","agents.defaults.pdfMaxPages",
+      "agents.list.*.id","agents.list.*.default","agents.list.*.name","agents.list.*.workspace","agents.list.*.agentDir","agents.list.*.model.primary","agents.list.*.model.fallbacks","agents.list.*.heartbeat.every","agents.list.*.heartbeat.model","agents.list.*.heartbeat.lightContext","agents.list.*.heartbeat.isolatedSession","agents.list.*.identity.name","agents.list.*.subagents.allowAgents","agents.list.*.tools.profile","agents.list.*.tools.exec.security","agents.list.*.tools.exec.ask",
+      "tools.profile","tools.web.search.enabled","tools.web.search.provider","tools.web.fetch.enabled","tools.media.audio.enabled","tools.sessions.visibility","tools.agentToAgent.enabled","tools.elevated.enabled","tools.elevated.allowFrom","tools.exec.host",
+      "bindings.*.agentId","bindings.*.match.channel","messages.tts.auto","messages.tts.mode","messages.tts.provider","commands.native","commands.nativeSkills","commands.restart","commands.ownerDisplay","commands.bash","commands.ownerAllowFrom","session.dmScope",
+      "hooks.enabled","hooks.path","hooks.token","hooks.allowedAgentIds","channels.defaults.heartbeat.showOk","channels.defaults.heartbeat.showAlerts","channels.defaults.heartbeat.useIndicator","channels.whatsapp.enabled","channels.whatsapp.dmPolicy","channels.whatsapp.allowFrom","channels.whatsapp.groupPolicy","channels.telegram.enabled","channels.telegram.dmPolicy","channels.telegram.botToken","channels.telegram.groups","channels.telegram.groupAllowFrom","channels.telegram.groupPolicy","channels.discord.token","channels.discord.enabled","channels.discord.groupPolicy","channels.discord.allowFrom","channels.discord.guilds.*.requireMention","channels.discord.guilds.*.users",
+      "gateway.port","gateway.mode","gateway.bind","gateway.http.endpoints.chatCompletions.enabled","gateway.http.endpoints.responses.enabled","gateway.controlUi.allowedOrigins","gateway.auth.mode","gateway.auth.token","gateway.tools.allow","gateway.remote.token","gateway.nodes.browser.node","gateway.nodes.denyCommands",
+      "memory.backend","memory.qmd.command","memory.qmd.searchMode","memory.qmd.update.onBoot","memory.qmd.update.interval","plugins.enabled","plugins.allow","plugins.slots.memory","plugins.slots.contextEngine","plugins.entries.*.enabled","plugins.entries.*.config","skills.entries.*.enabled"
+    ]
+  },
+  "schema-local": { label: "Schema local carregado", settings: [] }
+};
+
+let docs = { config: "", schema: "", db: "" };
+let activeTab = "config";
+let settings = PRESETS["docs-reference"].settings.slice();
+let schemaObject = null;
+let lastReport = null;
+
+const $ = id => document.getElementById(id);
+
+function esc(s) { return String(s).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c])); }
+
+function stripJson5Lite(input) {
+  let s = String(input || "").replace(/^\uFEFF/, "");
+  let out = "";
+  let inString = false;
+  let quote = "";
+  let escaped = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i], n = s[i + 1];
+    if (inString) {
+      if (c === "'" && quote === "'" && !escaped) out += '"'; else out += c;
+      if (escaped) escaped = false; else if (c === "\\") escaped = true; else if (c === quote) inString = false;
+      continue;
+    }
+    if (c === '"' || c === "'") { inString = true; quote = c; out += '"'; continue; }
+    if (c === "/" && n === "/") { while (i < s.length && s[i] !== "\n") i++; out += "\n"; continue; }
+    if (c === "/" && n === "*") { i += 2; while (i < s.length && !(s[i] === "*" && s[i + 1] === "/")) i++; i++; continue; }
+    out += c;
+  }
+  return out.replace(/,\s*([}\]])/g, "$1").replace(/([{,]\s*)([A-Za-z_$][\w$-]*)(\s*:)/g, '$1"$2"$3');
+}
+
+function parseJson(text, label) {
+  if (!String(text || "").trim()) throw new Error(label + " vazio.");
+  try { return JSON.parse(text); } catch (_) { return JSON.parse(stripJson5Lite(text)); }
+}
+
+function getPath(obj, path) {
+  return path.split(".").reduce((a, k) => a && Object.prototype.hasOwnProperty.call(a, k) ? a[k] : undefined, obj);
+}
+
+function valueType(v) {
+  if (v === null) return "null";
+  if (Array.isArray(v)) return "array";
+  return typeof v;
+}
+
+function resolveRef(root, ref) {
+  if (!ref || !ref.startsWith("#/")) return null;
+  return ref.slice(2).split("/").reduce((a, k) => a ? a[k.replace(/~1/g, "/").replace(/~0/g, "~")] : null, root);
+}
+
+function collectSchemaPaths(schema, root = schema, base = "", seen = new Set(), out = new Set()) {
+  if (!schema || typeof schema !== "object") return out;
+  if (schema.$ref) {
+    const marker = schema.$ref + "|" + base;
+    if (seen.has(marker)) return out;
+    seen.add(marker);
+    return collectSchemaPaths(resolveRef(root, schema.$ref), root, base, seen, out);
+  }
+  ["allOf", "anyOf", "oneOf"].forEach(k => Array.isArray(schema[k]) && schema[k].forEach(s => collectSchemaPaths(s, root, base, seen, out)));
+  if (schema.properties) {
+    Object.entries(schema.properties).forEach(([name, sub]) => {
+      const p = base ? base + "." + name : name;
+      out.add(p);
+      collectSchemaPaths(sub, root, p, seen, out);
+    });
+  }
+  if (schema.additionalProperties && typeof schema.additionalProperties === "object") {
+    const p = base ? base + ".*" : "*";
+    out.add(p);
+    collectSchemaPaths(schema.additionalProperties, root, p, seen, out);
+  }
+  if (schema.items) collectSchemaPaths(schema.items, root, base ? base + "[]" : "[]", seen, out);
+  return out;
+}
+
+function validateWithSchema(value, schema, root, path, issues, seen = new Set()) {
+  if (!schema || typeof schema !== "object") return;
+  if (schema.$ref) {
+    const marker = schema.$ref + "|" + path;
+    if (seen.has(marker)) return;
+    seen.add(marker);
+    validateWithSchema(value, resolveRef(root, schema.$ref), root, path, issues, seen);
+    return;
+  }
+  if (schema.type) {
+    const allowed = Array.isArray(schema.type) ? schema.type : [schema.type];
+    if (!allowed.includes(valueType(value))) {
+      issues.push({ severity: "error", path, title: "Tipo inválido", suggestion: "Recebido " + valueType(value) + "; esperado " + allowed.join(" ou ") });
+      return;
+    }
+  }
+  if (schema.enum && !schema.enum.some(x => JSON.stringify(x) === JSON.stringify(value))) issues.push({ severity: "error", path, title: "Valor fora da enumeração", suggestion: "Valores permitidos: " + schema.enum.map(JSON.stringify).join(", ") });
+  ["allOf", "anyOf", "oneOf"].forEach(k => Array.isArray(schema[k]) && schema[k].forEach(s => validateWithSchema(value, s, root, path, issues, seen)));
+  if (valueType(value) === "object") {
+    const props = schema.properties || {};
+    (schema.required || []).forEach(k => { if (!Object.prototype.hasOwnProperty.call(value, k)) issues.push({ severity: "error", path: path + "." + k, title: "Campo obrigatório em falta", suggestion: "Adicionar " + path + "." + k }); });
+    Object.keys(value).forEach(k => {
+      const child = path === "$" ? "$." + k : path + "." + k;
+      if (props[k]) validateWithSchema(value[k], props[k], root, child, issues, seen);
+      else if (schema.additionalProperties === false && k !== "$schema") issues.push({ severity: "error", path: child, title: "Chave desconhecida pelo schema", suggestion: "Remover ou confirmar se pertence a outra versão/plugin." });
+    });
+  }
+  if (Array.isArray(value) && schema.items) value.forEach((item, i) => validateWithSchema(item, schema.items, root, path + "[" + i + "]", issues, seen));
+}
+
+function findSecurityIssues(obj, path, issues) {
+  if (!obj || typeof obj !== "object") return;
+  Object.keys(obj).forEach(k => {
+    const v = obj[k], child = path === "$" ? "$." + k : path + "." + k;
+    if (typeof v === "string" && v.length >= 12 && /token|secret|password|api.?key|botToken/i.test(child) && !/url|model|provider|workspace|path/i.test(k)) issues.push({ severity: "warning", path: child, title: "Segredo em texto claro", suggestion: "Preferir variável de ambiente ou SecretRef. Se já foi partilhado, rodar este segredo." });
+    if (v && typeof v === "object") findSecurityIssues(v, child, issues);
+  });
+}
+
+function addHeuristicChecks(config, issues) {
+  const bind = getPath(config, "gateway.bind");
+  const auth = getPath(config, "gateway.auth");
+  if (bind === "lan" || bind === "0.0.0.0" || bind === "::") issues.push({ severity: "warning", path: "$.gateway.bind", title: "Gateway acessível na rede", suggestion: "Manter token forte, firewall/reverse proxy seguro e correr openclaw security audit --deep." });
+  if (auth === false || auth === "off" || (auth && auth.mode === "off")) issues.push({ severity: "error", path: "$.gateway.auth", title: "Autenticação aparenta estar desligada", suggestion: "Activar autenticação." });
+  Object.entries(config.channels || {}).forEach(([name, ch]) => { if (ch && ch.enabled === true && ch.groupPolicy === "open") issues.push({ severity: "warning", path: "$.channels." + name + ".groupPolicy", title: "Política de canal permissiva", suggestion: "Preferir allowlist." }); });
+  findSecurityIssues(config, "$", issues);
+}
+
+function editorText() { return $("plainEditor").value; }
+function setEditorText(t) { $("plainEditor").value = t; }
+function saveTab() { docs[activeTab] = editorText(); }
+function switchTab(tab) {
+  saveTab();
+  activeTab = tab;
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  setEditorText(docs[tab] || "");
+}
+
+function populatePresetSelect() {
+  const s = $("settingsPresetSelect");
+  s.innerHTML = "";
+  Object.entries(PRESETS).forEach(([key, p]) => {
+    const o = document.createElement("option");
+    o.value = key;
+    o.textContent = p.label;
+    s.appendChild(o);
+  });
+  s.value = schemaObject ? "schema-local" : "docs-reference";
+}
+
+function applyPreset(key) {
+  const preset = PRESETS[key];
+  if (!preset) return;
+  if (key === "schema-local" && schemaObject) settings = Array.from(collectSchemaPaths(schemaObject)).sort();
+  else settings = preset.settings.slice();
+  $("settingsCount").textContent = String(settings.length);
+  $("settingsList").innerHTML = settings.slice(0, 250).map(x => `<div><code>${esc(x)}</code></div>`).join("") + (settings.length > 250 ? `<div>... ${settings.length - 250} settings adicionais</div>` : "");
+  $("ideStatus").textContent = "Preset activo: " + preset.label + " (" + settings.length + " settings).";
+}
+
+function applySchema(text) {
+  docs.schema = text;
+  schemaObject = parseJson(text, "schema");
+  PRESETS["schema-local"].settings = Array.from(collectSchemaPaths(schemaObject)).sort();
+  populatePresetSelect();
+  applyPreset("schema-local");
+  $("schemaStatus").textContent = "Schema carregado: " + settings.length + " settings extraídos.";
+}
+
+function renderReport(report) {
+  const c = { error: 0, warning: 0, info: 0 };
+  report.issues.forEach(i => c[i.severity]++);
+  $("metrics").innerHTML = `<div class="metric"><strong>${c.error}</strong><span>erros</span></div><div class="metric"><strong>${c.warning}</strong><span>avisos</span></div><div class="metric"><strong>${c.info}</strong><span>info</span></div><div class="metric"><strong>${settings.length}</strong><span>settings</span></div>`;
+  if (report.parseError) { $("results").innerHTML = `<div class="issue error"><span class="badge error">erro</span><strong>Erro de leitura</strong><p>${esc(report.parseError)}</p></div>`; return; }
+  $("results").innerHTML = report.issues.map(i => `<div class="issue ${i.severity}" data-path="${esc(i.path || "$")}"><span class="badge ${i.severity}">${i.severity}</span><strong>${esc(i.title)}</strong><p><code>${esc(i.path || "$")}</code></p>${i.suggestion ? `<p>${esc(i.suggestion)}</p>` : ""}</div>`).join("");
+  if (window.fitIdeLayout) setTimeout(window.fitIdeLayout, 30);
+}
+
+function analyse() {
+  saveTab();
+  const report = { parseError: null, issues: [] };
+  try {
+    const config = parseJson(docs.config, "openclaw.json");
+    if (schemaObject) validateWithSchema(config, schemaObject, schemaObject, "$", report.issues);
+    addHeuristicChecks(config, report.issues);
+    report.issues.push({ severity: "info", path: "$", title: schemaObject ? "Cobertura por schema local" : "Cobertura por preset", suggestion: `${settings.length} settings activos no dropdown.` });
+    report.issues.sort((a, b) => ({ error: 0, warning: 1, info: 2 }[a.severity] - { error: 0, warning: 1, info: 2 }[b.severity]));
+  } catch (e) { report.parseError = e.message; }
+  lastReport = report;
+  renderReport(report);
+}
+
+async function loadFile(input, tab) {
+  const f = input.files && input.files[0]; if (!f) return;
+  const text = await f.text();
+  docs[tab] = text;
+  if (tab === "schema") applySchema(text);
+  if (activeTab === tab) setEditorText(text);
+}
+
+function bind() {
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+  $("settingsPresetSelect").addEventListener("change", e => applyPreset(e.target.value));
+  $("configFile").addEventListener("change", e => loadFile(e.target, "config"));
+  $("schemaFile").addEventListener("change", e => loadFile(e.target, "schema"));
+  $("dbFile").addEventListener("change", async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const text = await f.text(); docs.db = text;
+    const db = parseJson(text, "settings-db.json");
+    Object.entries(db.presets || {}).forEach(([key, p]) => { PRESETS[key] = { label: p.label || key, settings: (p.settings || []).map(s => typeof s === "string" ? s : s.path).filter(Boolean) }; });
+    populatePresetSelect(); applyPreset(Object.keys(PRESETS)[0]);
+  });
+  $("sampleBtn").addEventListener("click", () => { docs.config = '{\n  "gateway": { "bind": "lan", "auth": { "mode": "token", "token": "EXAMPLE_TOKEN" } },\n  "channels": { "discord": { "enabled": true, "groupPolicy": "allowlist" } },\n  "agents": { "list": [{ "id": "main", "heartbeat": { "every": "120m" } }] }\n}'; switchTab("config"); });
+  $("formatBtn").addEventListener("click", () => { try { setEditorText(JSON.stringify(parseJson(editorText(), activeTab), null, 2)); saveTab(); } catch(e) { $("ideStatus").textContent = "Não foi possível formatar: " + e.message; } });
+  $("analyseBtn").addEventListener("click", analyse);
+  $("downloadBtn").addEventListener("click", () => { saveTab(); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([docs.config], { type: "application/json" })); a.download = "openclaw.json"; a.click(); URL.revokeObjectURL(a.href); });
+  $("downloadReportBtn").addEventListener("click", () => { if (!lastReport) analyse(); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(lastReport, null, 2)], { type: "application/json" })); a.download = "relatorio-openclaw-json.json"; a.click(); URL.revokeObjectURL(a.href); });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const host = $("editorHost");
+  host.innerHTML = '<textarea id="plainEditor" class="fallback" spellcheck="false" placeholder="Cole ou escreva aqui o openclaw.json"></textarea>';
+  window.fallbackTextArea = $("plainEditor");
+  bind(); populatePresetSelect(); applyPreset("docs-reference"); switchTab("config");
+  $("ideStatus").textContent = "Editor estável activo. Dropdown de presets carregado.";
+  if (window.fitIdeLayout) setTimeout(window.fitIdeLayout, 50);
+});
