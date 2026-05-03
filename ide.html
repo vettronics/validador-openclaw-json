@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>OpenClaw JSON IDE</title>
-  <link rel="stylesheet" href="css/ide-v2.css?v=20260503-presets">
+  <link rel="stylesheet" href="css/ide-v2.css?v=20260503-stable">
 </head>
 <body>
   <div class="app">
     <header class="topbar">
       <h1>OpenClaw JSON IDE</h1>
-      <p>Editor com syntax highlighting, validação, schema local e sugestões de settings.</p>
+      <p>Editor estável com validação, presets de settings, schema local e cartões navegáveis.</p>
     </header>
 
     <nav class="toolbar">
@@ -63,7 +63,7 @@
           <div class="issue info">
             <span class="badge info">info</span>
             <strong>Pronto para edição</strong>
-            <p>Usa <code>Ctrl+Space</code> no editor para sugestões. Escolhe um preset ou carrega o <code>openclaw.schema.json</code> para validação completa.</p>
+            <p>O editor estável permite colar, escrever, formatar e validar o <code>openclaw.json</code>. Escolhe um preset ou carrega o <code>openclaw.schema.json</code>.</p>
           </div>
           <div class="settings-list" id="settingsList"></div>
         </div>
@@ -71,9 +71,8 @@
     </main>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
-  <script src="js/ide-v3.js?v=20260503-presets"></script>
-  <script src="js/ide-nav.js?v=20260503-presets"></script>
-  <script src="js/layout-fix.js?v=20260503-presets"></script>
+  <script src="js/ide-stable.js?v=20260503-stable"></script>
+  <script src="js/ide-nav.js?v=20260503-stable"></script>
+  <script src="js/layout-fix.js?v=20260503-stable"></script>
 </body>
 </html>
