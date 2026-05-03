@@ -4,36 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>OpenClaw JSON IDE</title>
-  <link rel="stylesheet" href="css/ide-v2.css?v=20260503-stable">
+  <link rel="stylesheet" href="css/ide-v2.css?v=20260503-monaco">
 </head>
 <body>
   <div class="app">
     <header class="topbar">
       <h1>OpenClaw JSON IDE</h1>
-      <p>Editor estável com validação, presets de settings, schema local e cartões navegáveis.</p>
+      <p>Editor Monaco com validação, autocomplete, presets de settings e cartões navegáveis.</p>
     </header>
 
     <nav class="toolbar">
       <a class="file-label" href="index.html">Página simples</a>
-
       <label class="file-label" for="configFile">Upload openclaw.json</label>
       <input id="configFile" type="file" accept=".json,.json5,application/json">
-
       <label class="file-label" for="schemaFile">Upload openclaw.schema.json</label>
       <input id="schemaFile" type="file" accept=".json,application/json">
-
       <label class="file-label" for="dbFile">Upload settings-db.json</label>
       <input id="dbFile" type="file" accept=".json,application/json">
-
       <select id="settingsPresetSelect" title="Escolher preset de settings"></select>
-
       <button id="sampleBtn" type="button">Exemplo</button>
       <button id="formatBtn" type="button">Formatar</button>
       <button id="analyseBtn" class="primary" type="button">Analisar</button>
       <button id="downloadBtn" type="button">Descarregar openclaw.json</button>
       <button id="downloadReportBtn" type="button">Descarregar relatório</button>
-
-      <span id="ideStatus" class="status">A iniciar editor...</span>
+      <span id="ideStatus" class="status">A iniciar Monaco...</span>
     </nav>
 
     <main class="main">
@@ -47,7 +41,6 @@
           <div id="editorHost" class="editor"></div>
         </div>
       </section>
-
       <aside class="side">
         <div class="side-head">
           <div id="metrics" class="metrics">
@@ -56,14 +49,14 @@
             <div class="metric"><strong>0</strong><span>info</span></div>
             <div class="metric"><strong id="settingsCount">0</strong><span>settings</span></div>
           </div>
-          <p id="schemaStatus" class="small" style="margin-top:10px">Sem schema carregado. A usar DB documentada.</p>
+          <p id="schemaStatus" class="small" style="margin-top:10px">Sem schema carregado. A usar preset documentado.</p>
           <p class="small">Depois de analisar, clica num erro/aviso para mover o cursor para a linha provável no editor.</p>
         </div>
         <div class="results" id="results">
           <div class="issue info">
             <span class="badge info">info</span>
             <strong>Pronto para edição</strong>
-            <p>O editor estável permite colar, escrever, formatar e validar o <code>openclaw.json</code>. Escolhe um preset ou carrega o <code>openclaw.schema.json</code>.</p>
+            <p>Usa <code>Ctrl+Space</code> para sugestões. Escolhe um preset ou carrega o <code>openclaw.schema.json</code>.</p>
           </div>
           <div class="settings-list" id="settingsList"></div>
         </div>
@@ -71,8 +64,9 @@
     </main>
   </div>
 
-  <script src="js/ide-stable.js?v=20260503-stable"></script>
-  <script src="js/ide-nav.js?v=20260503-stable"></script>
-  <script src="js/layout-fix.js?v=20260503-stable"></script>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+  <script src="js/ide-monaco.js?v=20260503-monaco"></script>
+  <script src="js/ide-nav.js?v=20260503-monaco"></script>
+  <script src="js/layout-fix.js?v=20260503-monaco"></script>
 </body>
 </html>
