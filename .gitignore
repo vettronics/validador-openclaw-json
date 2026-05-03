@@ -1,0 +1,6 @@
+.DS_Store
+Thumbs.db
+*.log
+relatorio-openclaw-json.json
+openclaw.json
+openclaw.schema.json
