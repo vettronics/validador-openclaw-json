@@ -14,6 +14,8 @@
     </header>
 
     <nav class="toolbar">
+      <a class="file-label" href="index.html">Página simples</a>
+
       <label class="file-label" for="configFile">Upload openclaw.json</label>
       <input id="configFile" type="file" accept=".json,.json5,application/json">
 
@@ -53,6 +55,7 @@
             <div class="metric"><strong id="settingsCount">0</strong><span>settings</span></div>
           </div>
           <p id="schemaStatus" class="small" style="margin-top:10px">Sem schema carregado. A usar DB documentada.</p>
+          <p class="small">Depois de analisar, clica num erro/aviso para mover o cursor para a linha provável no editor.</p>
         </div>
         <div class="results" id="results">
           <div class="issue info">
@@ -68,5 +71,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
   <script src="js/ide.js"></script>
+  <script src="js/ide-nav.js"></script>
 </body>
 </html>
