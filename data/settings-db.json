@@ -1,0 +1,42 @@
+{
+  "name": "OpenClaw settings database",
+  "version": "0.1.0",
+  "updated": "2026-05-03",
+  "coverage": "Base curada de settings e regras frequentes. O schema exportado por openclaw config schema continua a ser a fonte canónica.",
+  "presets": {
+    "common-2026.4.x": {
+      "label": "OpenClaw 2026.4.x — settings frequentes",
+      "settings": [
+        { "path": "gateway.bind", "type": "string", "category": "gateway", "description": "Endereço de escuta do Gateway.", "recommended": "127.0.0.1 quando não existe reverse proxy seguro; 0.0.0.0 apenas com autenticação e firewall.", "examples": ["127.0.0.1", "0.0.0.0"] },
+        { "path": "gateway.host", "type": "string", "category": "gateway", "description": "Campo alternativo usado por algumas configurações para endereço/host do Gateway.", "recommended": "Preferir localhost em ambientes sem exposição externa.", "examples": ["127.0.0.1"] },
+        { "path": "gateway.auth.enabled", "type": "boolean", "category": "security", "description": "Activa autenticação no Gateway.", "recommended": true, "examples": [true] },
+        { "path": "gateway.auth.mode", "type": "string", "category": "security", "description": "Modo de autenticação do Gateway quando aplicável.", "recommended": "Não usar off em redes não isoladas.", "examples": ["token"] },
+        { "path": "channels.*.enabled", "type": "boolean", "category": "channels", "description": "Activa ou desactiva um canal.", "recommended": "Activar apenas canais necessários.", "examples": [true, false] },
+        { "path": "channels.*.groupPolicy", "type": "string", "category": "channels/security", "description": "Política de acesso para canais de grupo.", "recommended": "allowlist", "examples": ["allowlist"] },
+        { "path": "channels.*.guilds.*.users", "type": "array", "category": "channels/security", "description": "Lista de utilizadores autorizados por guild/servidor.", "recommended": "Definir IDs explícitos de utilizadores autorizados.", "examples": [["123456789"]] },
+        { "path": "channels.*.guilds.*.requireMention", "type": "boolean", "category": "channels", "description": "Define se o bot deve exigir menção explícita.", "recommended": "false apenas em canais muito controlados.", "examples": [true, false] },
+        { "path": "tools.elevated.enabled", "type": "boolean", "category": "tools/security", "description": "Activa execução elevada.", "recommended": "false salvo necessidade operacional clara.", "examples": [false, true] },
+        { "path": "tools.elevated.allowFrom", "type": "object", "category": "tools/security", "description": "Define origens autorizadas para execução elevada.", "recommended": "Obrigatório quando tools.elevated.enabled=true.", "examples": [{"discord": ["123456789"]}] },
+        { "path": "tools.exec.security", "type": "string", "category": "tools/security", "description": "Perfil de segurança da execução de comandos.", "recommended": "Evitar full em canais abertos.", "examples": ["restricted", "full"] },
+        { "path": "logging.redactSensitive", "type": "boolean|string", "category": "logging/security", "description": "Controla redacção de dados sensíveis nos logs.", "recommended": "Activar redacção; evitar false/off/none.", "examples": [true, "tools"] },
+        { "path": "agents.*.workspace", "type": "string", "category": "agents", "description": "Directório de trabalho do agente.", "recommended": "Usar workspaces separados por agente especializado.", "examples": ["~/.openclaw/workspace"] },
+        { "path": "agents.*.model.primary", "type": "string", "category": "models", "description": "Modelo principal do agente.", "recommended": "Usar modelo forte para agentes operacionais críticos.", "examples": ["openai-codex/gpt-5.5"] },
+        { "path": "agents.*.model.fallbacks", "type": "array", "category": "models", "description": "Lista de modelos de fallback.", "recommended": "Definir fallbacks de menor custo ou provedores alternativos.", "examples": [["github-copilot/gpt-5-mini"]] },
+        { "path": "agents.*.heartbeat.every", "type": "string", "category": "agents/cost", "description": "Frequência de heartbeat.", "recommended": "120m ou superior para agentes com contexto pesado, salvo necessidade operacional.", "examples": ["120m"] },
+        { "path": "memory.backend", "type": "string", "category": "memory", "description": "Backend de memória.", "recommended": "Confirmar compatibilidade com a versão instalada.", "examples": ["qmd", "memory-core"] },
+        { "path": "memory.qmd.command", "type": "string", "category": "memory", "description": "Comando QMD quando memory.backend=qmd.", "recommended": "Usar caminho absoluto quando possível.", "examples": ["/usr/local/bin/qmd"] },
+        { "path": "plugins.allow", "type": "array", "category": "plugins/security", "description": "Lista de plugins permitidos.", "recommended": "Definir allowlist para evitar carregamento inesperado de plugins não bundled.", "examples": [["memory-core", "browser"]] },
+        { "path": "browser.profiles.*", "type": "object", "category": "browser", "description": "Perfis de browser control/CDP.", "recommended": "Separar perfil gerido de perfil pessoal.", "examples": [{"cdpPort": 18800}] },
+        { "path": "cron.*", "type": "object", "category": "automation", "description": "Tarefas cron configuradas no OpenClaw.", "recommended": "Usar validação pós-execução e sessionTarget isolado quando aplicável.", "examples": [{"schedule": "0 3 * * *"}] }
+      ]
+    }
+  },
+  "rules": [
+    { "id": "gateway-exposed", "severity": "warning", "match": { "paths": ["gateway.bind", "gateway.host", "gateway.listen"], "values": ["0.0.0.0", "::"] }, "message": "Gateway exposto fora de localhost.", "suggestion": "Usar autenticação forte, firewall/reverse proxy seguro e openclaw security audit --deep." },
+    { "id": "gateway-auth-off", "severity": "error", "match": { "paths": ["gateway.auth", "gateway.auth.enabled", "gateway.auth.mode"], "values": [false, "off", "none"] }, "message": "Autenticação do Gateway aparenta estar desligada.", "suggestion": "Activar autenticação antes de expor a interface ou nós remotos." },
+    { "id": "logging-redaction-off", "severity": "warning", "match": { "paths": ["logging.redactSensitive"], "values": [false, "off", "none"] }, "message": "Redacção de dados sensíveis aparentemente desligada.", "suggestion": "Activar redacção de dados sensíveis nos logs." },
+    { "id": "elevated-without-allowfrom", "severity": "warning", "message": "Execução elevada activa sem allowFrom evidente.", "suggestion": "Definir allowFrom por canal/agente." },
+    { "id": "heartbeat-too-frequent", "severity": "warning", "message": "Heartbeat muito frequente.", "suggestion": "Considerar 120m ou mais em agentes com contexto pesado." },
+    { "id": "secret-inline", "severity": "warning", "message": "Possível segredo escrito directamente no ficheiro.", "suggestion": "Preferir variáveis de ambiente ou secret references." }
+  ]
+}
