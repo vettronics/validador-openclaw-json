@@ -242,6 +242,7 @@ function initMonaco() {
   fallbackTextArea.className = "fallback hidden";
   fallbackTextArea.id = "fallbackEditor";
   $("editorHost").appendChild(fallbackTextArea);
+  window.fallbackTextArea = fallbackTextArea;
 
   if (!window.require) {
     fallbackTextArea.classList.remove("hidden");
@@ -252,6 +253,7 @@ function initMonaco() {
   window.require(["vs/editor/editor.main"], function() {
     monaco.editor.defineTheme("openclaw-dark", { base: "vs-dark", inherit: true, rules: [], colors: { "editor.background": "#020617" } });
     editor = monaco.editor.create($("editorHost"), { value: docs.config, language: "json", theme: "openclaw-dark", automaticLayout: true, minimap: { enabled: true }, fontSize: 13, tabSize: 2, wordWrap: "on", formatOnPaste: true, formatOnType: true, model: monaco.editor.createModel(docs.config, "json", monaco.Uri.parse("file:///openclaw.json")) });
+    window.editor = editor;
     configureMonacoJsonSchema();
     registerCompletionProvider();
     $("ideStatus").textContent = "Monaco Editor activo. Ctrl+Space mostra sugestões.";
@@ -266,10 +268,10 @@ function renderReport(report) {
   report.issues.forEach(i => { counts[i.severity] = (counts[i.severity] || 0) + 1; });
   $("metrics").innerHTML = `<div class="metric"><strong>${counts.error}</strong><span>erros</span></div><div class="metric"><strong>${counts.warning}</strong><span>avisos</span></div><div class="metric"><strong>${counts.info}</strong><span>info</span></div><div class="metric"><strong>${settings.length}</strong><span>settings</span></div>`;
   if (report.parseError) {
-    $("results").innerHTML = `<div class="issue error"><span class="badge error">erro</span><strong>Erro de leitura</strong><p>${escapeHtml(report.parseError)}</p></div>`;
+    $("results").innerHTML = `<div class="issue error" data-path="$"><span class="badge error">erro</span><strong>Erro de leitura</strong><p>${escapeHtml(report.parseError)}</p></div>`;
     return;
   }
-  $("results").innerHTML = report.issues.map(i => `<div class="issue ${i.severity}"><span class="badge ${i.severity}">${i.severity}</span><strong>${escapeHtml(i.title)}</strong><p><code>${escapeHtml(i.path || "$")}</code></p>${i.suggestion ? `<p>${escapeHtml(i.suggestion)}</p>` : ""}</div>`).join("") || `<div class="issue ok"><span class="badge ok">ok</span><strong>Nenhum problema encontrado</strong></div>`;
+  $("results").innerHTML = report.issues.map(i => `<div class="issue ${i.severity}" data-path="${escapeHtml(i.path || "$")}" title="Clique para ir para a linha provável"><span class="badge ${i.severity}">${i.severity}</span><strong>${escapeHtml(i.title)}</strong><p><code>${escapeHtml(i.path || "$")}</code></p>${i.suggestion ? `<p>${escapeHtml(i.suggestion)}</p>` : ""}</div>`).join("") || `<div class="issue ok"><span class="badge ok">ok</span><strong>Nenhum problema encontrado</strong></div>`;
 }
 
 function analyse() {
